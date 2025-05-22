@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <LiquidCrystal.h>
+#include <ESP32Servo.h>
 
 const char *ssid = "TrippleC";
 const char *password = "19671970990003";
@@ -17,12 +18,16 @@ NetworkServer server(80);
 //setting pins for LCD display (RS,E, D4, D5, D6, D7)
 LiquidCrystal lcd(23,32, 18, 19, 21, 22);
 
+Servo myServo;
+#define servoPin 26
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   pinMode(Red_LED, OUTPUT);
   pinMode(Blue_LED, OUTPUT);
   pinMode(Green_LED, OUTPUT);
+  myServo.attach(servoPin);
   
   delay(10);
 
@@ -66,10 +71,8 @@ void loop() {
             client.println();
 
             // the content of the HTTP response follows the header:
-            client.print("<a href=\"/RED\">RED</a><br>");
-            client.print("<a href=\"/BLUE\">BLUE</a><br>");
-            client.print("<a href=\"/GREEN\">GREEN</a><br>");
-            //client.print("<a href=\"/END\">END</a><br>");
+            client.print("<a href=\"/LOCK\">RED</a><br>");
+            client.print("<a href=\"/UNLOCK\">BLUE</a><br>");
 
             // The HTTP response ends with another blank line:
             client.println();
@@ -82,42 +85,34 @@ void loop() {
           currentLine += c;      // add it to the end of the currentLine
         }
 
-        if(currentLine.endsWith("GET /RED")) {
-          digitalWrite(Red_LED, !digitalRead(Red_LED));
-          if(digitalRead(Red_LED) == HIGH) {
-            sendDiscordNotification("Red LED turned on");
-            lcd.clear();
-            lcd.print("Red LED is on");
-            lcd.setCursor(0,1);
-            lcd.print("Safe is locked");
-          }
-          else {
-            sendDiscordNotification("Red LED turned off");
-          }
+        if(currentLine.endsWith("GET /LOCK")) {
+          digitalWrite(Red_LED, HIGH);
+          digitalWrite(Blue_LED, LOW);
+          myServo.write(90);
+          sendDiscordNotification("Safe is Locked");
+          lcd.clear();
+          lcd.print("Safe has");
+          lcd.setCursor(0, 1);
+          lcd.print("been locked");
+          delay(5000);
+          lcd.clear();
+          lcd.print("Enter code");
+          lcd.setCursor(0, 1);
+          lcd.print("to open:");
         }
-        if(currentLine.endsWith("GET /BLUE")) {
-          digitalWrite(Blue_LED, !digitalRead(Blue_LED));
-          if(digitalRead(Blue_LED) == HIGH) {
-            sendDiscordNotification("Blue LED turned on");
-          }
-          else {
-            sendDiscordNotification("Blue LED turned off");
-          }
+        if(currentLine.endsWith("GET /UNLOCK")) {
+          digitalWrite(Red_LED, LOW);
+          digitalWrite(Blue_LED, HIGH);
+          myServo.write(0);
+          sendDiscordNotification("Safe is Unlocked");
+          lcd.clear();
+          lcd.print("Safe has");
+          lcd.setCursor(0, 1);
+          lcd.print("been unlocked");
+          delay(5000);
+          lcd.clear();
+          lcd.print("Press ? to lock");
         }
-        if(currentLine.endsWith("GET /GREEN")) {
-          digitalWrite(Green_LED, !digitalRead(Green_LED));
-          if(digitalRead(Green_LED) == HIGH) {
-            sendDiscordNotification("Green LED turned on");
-          }
-          else {
-            sendDiscordNotification("Green LED turned off");
-          }
-        }
-        // if(currentLine.endsWith("GET /END")) {
-        //   client.stop();
-        // }
-        // client.stop();
-        // Serial.println("Client Disconnected.");
       }
     }
   }
