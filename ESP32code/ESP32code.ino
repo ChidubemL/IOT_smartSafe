@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <LiquidCrystal.h>
 
 const char *ssid = "TrippleC";
 const char *password = "19671970990003";
@@ -8,9 +9,13 @@ const char *webhookURL = "https://discord.com/api/webhooks/1374875339796381777/P
 
 NetworkServer server(80);
 
+//setting pins for LED
 #define Red_LED 2
 #define Blue_LED 4
 #define Green_LED 5
+
+//setting pins for LCD display (RS,E, D4, D5, D6, D7)
+LiquidCrystal lcd(23,32, 18, 19, 21, 22);
 
 void setup() {
   // put your setup code here, to run once:
@@ -33,6 +38,10 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   server.begin();
+
+
+  lcd.begin(16, 2);
+  lcd.clear();
 }
 
 void loop() {
@@ -77,6 +86,10 @@ void loop() {
           digitalWrite(Red_LED, !digitalRead(Red_LED));
           if(digitalRead(Red_LED) == HIGH) {
             sendDiscordNotification("Red LED turned on");
+            lcd.clear();
+            lcd.print("Red LED is on");
+            lcd.setCursor(0,1);
+            lcd.print("Safe is locked");
           }
           else {
             sendDiscordNotification("Red LED turned off");
